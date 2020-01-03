@@ -11,7 +11,8 @@
     "test:unit": "mocha --recursive -r tsconfig-paths/register -r ts-node/register -r source-map-support/register src/**/*.spec.ts",
     "test:lint": "eslint --ext .ts ./src",
     "test:lint:fix": "npm run test:lint -- --fix",
-    "test": "npm run test:lint && npm run test:unit"
+    "test": "npm run test:lint && npm run test:unit",
+    "lint": "tsc --noEmit && eslint '*/**/*.{js,ts,tsx}' --quiet --fix"
   },
   "author": "",
   "license": "ISC",
@@ -24,7 +25,8 @@
     "express": "^4.17.1",
     "mongoose": "^5.8.3",
     "prettier": "^1.19.1",
-    "shuffle-array": "^1.0.1"
+    "shuffle-array": "^1.0.1",
+    "socket.io": "^2.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.7.7",
@@ -37,6 +39,7 @@
     "@types/mocha": "^5.2.7",
     "@types/mongoose": "^5.5.36",
     "@types/shuffle-array": "^0.0.28",
+    "@types/socket.io": "^2.1.4",
     "@types/supertest": "^2.0.8",
     "@typescript-eslint/eslint-plugin": "^2.14.0",
     "@typescript-eslint/parser": "^2.14.0",
