@@ -1,9 +1,9 @@
 import shuffle from 'shuffle-array';
 
-export const generate = async (numOfColumn: number, numOfWin: number) => {
+export const generate = async (numOfColumn: number, numOfRow: number, numOfWin: number) => {
   try {
     const data = [
-      [null, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      [1, 2, 3, 4, 5, 6, 7, 8, 9],
       [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
       [20, 21, 22, 23, 24, 25, 26, 27, 28, 29],
       [30, 31, 32, 33, 34, 35, 36, 37, 38, 39],
@@ -21,7 +21,7 @@ export const generate = async (numOfColumn: number, numOfWin: number) => {
     }
 
     const normalize: number[][] = [];
-    for (let y = 0; y < newData[1].length; y++) {
+    for (let y = 0; y < numOfRow; y++) {
       const row = [];
       for (let x = 0; x < newData.length; x++) {
         row.push(newData[x][y]);
@@ -29,23 +29,31 @@ export const generate = async (numOfColumn: number, numOfWin: number) => {
       normalize.push(row);
     }
 
-    const result = normalize.reduce((prev, row) => {
-      return [...prev, expelRow(row, numOfWin)];
+    const card = normalize.reduce((prev, row) => {
+      const options = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].slice(0, row.length);
+      const rd = shuffle.pick(options, { picks: 4 });
+      const expelCell = row.map((cell, index) => {
+        if (rd.includes(index)) {
+          return {
+            value: cell,
+            status: 'available',
+          };
+        }
+        return {
+          value: cell,
+          status: 'hidden',
+        };
+      });
+      return [...prev, expelCell];
     }, []);
 
-    return result;
+    return {
+      card,
+      num_of_column: numOfColumn,
+      num_of_row: numOfRow,
+      num_of_win: numOfWin,
+    };
   } catch (err) {
     throw err;
-  }
-};
-
-const expelRow: (data: number[], num: number) => void = (data, num) => {
-  const newData = data.filter(Number);
-  if (newData.length > num) {
-    const random = Math.floor(Math.random() * newData.length);
-    const kk = [...newData.slice(0, random), ...newData.slice(random + 1, newData.length)];
-    return expelRow(kk, num);
-  } else {
-    return newData;
   }
 };
