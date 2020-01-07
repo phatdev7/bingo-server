@@ -1,7 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IRoom extends Document {
-  id: string;
   name: string;
   max_member: number;
   current_members: [];
@@ -11,17 +10,13 @@ export interface IRoom extends Document {
 }
 
 const roomSchema = new Schema({
-  id: {
-    type: String,
-    required: true,
-  },
   name: {
     type: String,
     default: '',
   },
   max_member: {
     type: Number,
-    default: 4,
+    default: 10,
     required: true,
   },
   current_members: {
@@ -44,7 +39,6 @@ const roomSchema = new Schema({
 roomSchema.methods.toJSON = function() {
   return {
     _id: this._id.toString(),
-    id: this.id,
     name: this.name,
     max_member: this.max_member,
     current_members: this.current_members,

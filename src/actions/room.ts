@@ -38,15 +38,14 @@ const getRoomById = (params: IParams, callback: Function) => {
   });
 };
 
-const createRoom = async (body: IBody) => {
-  const { name } = body;
-  const sequence_value = await getNextSequenceValue();
+const createRoom = async (name: string) => {
   const finalRoom = new Room({
-    id: sequence_value,
     name,
-    maxMember: 4,
+    key_member: name,
+    maxMember: 10,
     currentMembers: [],
     active: false,
+    maybe_start: false,
   });
 
   return finalRoom

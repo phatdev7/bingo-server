@@ -2,7 +2,7 @@ import { Socket } from 'socket.io';
 import Commands from './Commands';
 import config from '../../config';
 import Sender from './Sender';
-import { CreateGameHandler, JoinRoomHandler } from './socketHandlers';
+import { CreateRoomHandler, JoinRoomHandler } from './socketHandlers';
 import { ISocket } from './socketHandlers/AbsHandler';
 const { authCookieKey } = config;
 
@@ -10,8 +10,8 @@ export default (socket: ISocket) => {
   // const cookie = socket.handshake.headers.cookie;
   // const authCookie = cookie[authCookieKey] && JSON.parse(cookie[authCookieKey].replace('j:', ''));
 
-  socket.on(Commands.createGame, params => {
-    const handler = new CreateGameHandler(Commands.createGame);
+  socket.on(Commands.createRoom, params => {
+    const handler = new CreateRoomHandler(Commands.createRoom);
     handler.handleMessage(socket, params);
   });
 

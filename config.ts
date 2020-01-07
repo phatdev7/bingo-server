@@ -4,7 +4,7 @@ export default {
   // mongodb_host: 'mongodb+srv://zephys_db1:thezephysgame@zephys-d6zna.mongodb.net/zephys?retryWrites=true&w=majority',
   google_client_id: '1004633767039-80rgcp29mna8g0ifa26maoo8bu3kmie0.apps.googleusercontent.com',
   jwtKey: 'Zephys4HS96kDJS2HAGwk9skd847jdG3fsljl57Gsfsj6FsHF46GD768gal1kkaa',
-  authCookieKey: 'zephys_session',
+  authCookieKey: 'bingo_session',
   jwtExpiresIn: 2592000000, //30 days
   cachingConfig: {
     host: '127.0.0.1',
