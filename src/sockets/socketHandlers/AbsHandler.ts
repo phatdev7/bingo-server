@@ -5,12 +5,16 @@ import { IUser } from '../../models/user';
 
 export interface ISocket extends Socket {
   room_id: string;
-  user: {};
+  user: {
+    token: string;
+  };
 }
 
 export interface IParams {
   room_id: string;
-  user: IUser;
+  user: {
+    token: string;
+  };
 }
 
 class AbsHandler {

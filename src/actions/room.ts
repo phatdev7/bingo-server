@@ -1,6 +1,8 @@
 import { Room } from '../models';
 import { Counter } from '../models';
 import { IUser } from '../models/user';
+import { createTicket } from './ticket';
+import uid from 'uniqid';
 
 interface IParams {
   id: string;
@@ -38,20 +40,33 @@ const getRoomById = (params: IParams, callback: Function) => {
   });
 };
 
-const createRoom = async (name: string) => {
+export const getCurrenRoomByToken = async (token: string) => {
+  return Room.find({ key_member: token, status: ['open', 'start'] }).exec();
+};
+
+export const getRoomByTokenAndRoomId = async (token: string, id: string) => {
+  return Room.findOne({ key_member: token, _id: id }).exec();
+};
+
+export const createRoom = async (token: string, title: string, callback: Function) => {
   const finalRoom = new Room({
-    name,
-    key_member: name,
+    title,
+    key_member: token,
     maxMember: 10,
     currentMembers: [],
-    active: false,
     maybe_start: false,
   });
 
-  return finalRoom
+  finalRoom
     .save()
-    .then(room => room.toJSON())
-    .catch(err => err);
+    .then(async room => {
+      room.toJSON();
+      await createTicket(room.toJSON()._id);
+      callback(null, room.toJSON());
+    })
+    .catch(err => {
+      callback(err);
+    });
 };
 
 const updateRoom = async (room_id: string, params: IParams) => {
@@ -69,21 +84,21 @@ const updateRoom = async (room_id: string, params: IParams) => {
   }
 };
 
-const addUserInRoom = (room_id: string, user: IUser, callback: Function) => {
+const addUserInRoom = (room_id: string, token: string, callback: Function) => {
   Room.findOne({ id: room_id }, (err, room) => {
     if (err) {
       return callback('Room does not exist');
-    } else if (!room.active) {
+    } else if (!room.status) {
       const { current_members } = room.toJSON();
-      const idx = current_members.findIndex((item: IUser) => item._id === user._id || '');
+      const idx = current_members.findIndex((item: IUser) => item._id === token || '');
       let new_current_members = [...current_members];
 
       if (idx === -1) {
-        new_current_members.push(user);
+        new_current_members.push(token);
       } else {
         new_current_members = [
           ...current_members.slice(0, idx),
-          user,
+          token,
           ...current_members.slice(idx + 1, current_members.length),
         ];
       }
@@ -108,7 +123,7 @@ const removeUserInRoom = (room_id: string, user: IUser, callback: Function) => {
   Room.findOne({ id: room_id }, (err, room) => {
     if (err) {
       return callback('Room does not exist');
-    } else if (!room.active) {
+    } else if (!room.status) {
       const { current_members } = room.toJSON();
       const new_current_members = current_members.filter(
         (item: IUser) => item.email !== user.email,
@@ -134,7 +149,7 @@ const userReadyRoom = (room_id: string, user: IUser, callback: Function) => {
   Room.findOne({ id: room_id }, (err, room) => {
     if (err) {
       return callback('Room does not exist');
-    } else if (!room.active) {
+    } else if (!room.status) {
       const { current_members } = room.toJSON();
       const idx = current_members.findIndex((item: IUser) => item._id === user._id);
       let new_current_members = [...current_members];
@@ -167,7 +182,7 @@ const userCancelRoom = (room_id: string, user: IUser, callback: Function) => {
   Room.findOne({ id: room_id }, (err, room) => {
     if (err) {
       return callback('Room does not exist');
-    } else if (!room.active) {
+    } else if (!room.status) {
       const { current_members } = room.toJSON();
       const idx = current_members.findIndex((item: IUser) => item._id === user._id);
       let new_current_members = [...current_members];
@@ -200,7 +215,7 @@ const startRoom = (room_id: string, callback: Function) => {
   Room.findOne({ id: room_id }, (err, room) => {
     if (err) {
       return callback('Room does not exist');
-    } else if (!room.active) {
+    } else if (!room.status) {
       Room.findOneAndUpdate({ id: room.id }, { active: true }, { new: true }, (err, _room) => {
         callback(err, _room.toJSON());
       });
@@ -216,16 +231,4 @@ const getMayBeStart = (current_members: any[]) => {
       .findIndex((item: any) => !item.is_ready) === -1;
 
   return maybe_start;
-};
-
-export default {
-  getRooms,
-  getRoomById,
-  createRoom,
-  updateRoom,
-  addUserInRoom,
-  removeUserInRoom,
-  userReadyRoom,
-  userCancelRoom,
-  startRoom,
 };

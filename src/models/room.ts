@@ -1,16 +1,16 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IRoom extends Document {
-  name: string;
+  title: string;
   max_member: number;
   current_members: [];
   key_member: string;
   maybe_start: boolean;
-  active: boolean;
+  status: string;
 }
 
 const roomSchema = new Schema({
-  name: {
+  title: {
     type: String,
     default: '',
   },
@@ -30,21 +30,21 @@ const roomSchema = new Schema({
     type: Boolean,
     default: false,
   },
-  active: {
-    type: Boolean,
-    default: false,
+  status: {
+    type: String,
+    default: 'open',
   },
 });
 
 roomSchema.methods.toJSON = function() {
   return {
     _id: this._id.toString(),
-    name: this.name,
+    title: this.title,
     max_member: this.max_member,
     current_members: this.current_members,
     key_member: this.key_member,
     maybe_start: this.maybe_start,
-    active: this.active,
+    status: this.status,
   };
 };
 

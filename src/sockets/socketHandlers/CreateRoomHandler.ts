@@ -2,43 +2,44 @@ import { Socket } from 'socket.io';
 import SendData from '../SendData';
 import AbsHandler, { ISocket, IParams } from './AbsHandler';
 import Commands from '../Commands';
-import { roomAction } from '../../actions';
+import { createRoom } from '../../actions/room';
 import { IRoom } from '../../models/room';
 import user, { IUser } from '../../models/user';
-import uniqid from 'uniqid';
 
 interface IParams2 extends IParams {
-  user_name: string;
+  token: string;
+  title: string;
 }
 
 class CreateRoomHandler extends AbsHandler {
   checkParams = async (params: IParams2) => {
-    const { user_name } = params;
-    if (!user_name) {
-      return 'User_name is required';
+    const { token, title } = params;
+    if (!token) {
+      return 'Token is required';
+    } else if (!title) {
+      return 'Title is required';
     }
     return '';
   };
 
   doHandleMessage = async (socket: ISocket, params: IParams2, sendData: SendData) => {
-    const { user_name } = params;
+    const { token, title } = params;
 
-    roomAction
-      .createRoom(user_name)
-      .then((_room: IRoom) => {
-        if (socket.room_id) socket.leave(socket.room_id);
-
-        socket.room_id = _room._id;
-        socket.user = { user_name };
-        socket.join(socket.room_id);
-        sendData.addParam('user', socket.user).addParam('room', _room);
-        this.sender.broadCastInRoom(socket.room_id, sendData);
-        // this.sender.broadCastAll(Commands.joinRoomGlobal, sendData);
-      })
-      .catch(err => {
+    createRoom(token, title, (err: any, _room: IRoom) => {
+      if (err) {
         sendData.setError(err);
         this.sender.send(socket, sendData);
-      });
+      } else {
+        if (socket.room_id) {
+          socket.leave(socket.room_id);
+        }
+        socket.room_id = _room._id;
+        socket.user = { token };
+        socket.join(socket.room_id);
+        sendData.addParam('token', socket.user.token).addParam('room', _room);
+        this.sender.broadCastInRoom(socket.room_id, sendData);
+      }
+    });
   };
 }
 
