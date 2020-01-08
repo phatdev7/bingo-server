@@ -20,6 +20,7 @@ app.use(routes);
 mongoose.connect('mongodb://localhost:27017/bingo', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+  useFindAndModify: false,
 });
 
 import http from 'http';

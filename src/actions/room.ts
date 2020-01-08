@@ -3,6 +3,7 @@ import { Counter, Ticket } from '../models';
 import { IUser } from '../models/user';
 import { createTicket } from './ticket';
 import uid from 'uniqid';
+import mongoose from 'mongoose';
 
 interface IParams {
   id: string;
@@ -84,47 +85,62 @@ const updateRoom = async (room_id: string, params: IParams) => {
   }
 };
 
-const addUserInRoom = (ticket: string, token: string, callback: Function) => {
+export const addUserInRoom = async (ticket: string, token: string, callback: Function) => {
   const { room_id, uid } = JSON.parse(ticket);
 
-  Room.findOne({ room_id }, (err, room) => {
-    if (err || !room) {
-      return callback('Room does not exist');
-    } else if (room.status === 'open') {
-      Ticket.findOne({ room_id }, (err, ticket) => {
-        if (err || !ticket) {
-          callback('Ticket does not exist');
-        } else {
-          const { current_members } = room.toJSON();
-          const idx = current_members.findIndex((item: IUser) => item._id === token || '');
-          let new_current_members = [...current_members];
+  let session = null;
+  Room.findOne({ _id: room_id }, async (err, room) => {
+    session = await mongoose.startSession();
+    session.startTransaction();
 
-          if (idx === -1) {
-            new_current_members.push(token);
-          } else {
-            new_current_members = [
-              ...current_members.slice(0, idx),
-              token,
-              ...current_members.slice(idx + 1, current_members.length),
-            ];
-          }
-        }
-      });
+    console.log(room_id);
+    console.log(room);
+    return Room.findOneAndUpdate({ _id: room_id }, { max_member: 8 }, { new: true }, (err, abc) => {
+      console.log(abc);
+    });
+  })
+    .then(() => {
+      return Room.find();
+    })
+    .then(doc => {
+      console.log(doc);
+    });
 
-      // Room.findOneAndUpdate(
-      //   { id: room_id },
-      //   {
-      //     current_members: new_current_members,
-      //     maybe_start: getMayBeStart(new_current_members),
-      //     key_member: new_current_members[0] ? new_current_members[0]._id : '',
-      //   },
-      //   { new: true },
-      //   (err, _room) => {
-      //     callback(err, _room.toJSON());
-      //   },
-      // );
-    }
-  });
+  // if (err || !room) {
+  //   return callback('Room does not exist');
+  // } else if (room.status === 'open') {
+  //   Ticket.findOne({ room_id }, (err, ticket) => {
+  //     if (err || !ticket) {
+  //       callback('Ticket does not exist');
+  //     } else {
+  //       const { current_members } = room.toJSON();
+  //       const idx = current_members.findIndex((item: IUser) => item._id === token || '');
+  //       let new_current_members = [...current_members];
+
+  //       if (idx === -1) {
+  //         new_current_members.push(token);
+  //       } else {
+  //         new_current_members = [
+  //           ...current_members.slice(0, idx),
+  //           token,
+  //           ...current_members.slice(idx + 1, current_members.length),
+  //         ];
+  //       }
+  //     }
+  //   });
+
+  // Room.findOneAndUpdate(
+  //   { id: room_id },
+  //   {
+  //     current_members: new_current_members,
+  //     maybe_start: getMayBeStart(new_current_members),
+  //     key_member: new_current_members[0] ? new_current_members[0]._id : '',
+  //   },
+  //   { new: true },
+  //   (err, _room) => {
+  //     callback(err, _room.toJSON());
+  //   },
+  // );
 };
 
 const removeUserInRoom = (room_id: string, user: IUser, callback: Function) => {
