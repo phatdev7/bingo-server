@@ -4,7 +4,8 @@ import Ticket, { ITicket } from '../models/ticket';
 export const createTicket = async (room_id: string) => {
   const tickets = [];
   for (let i = 0; i < 10; i++) {
-    tickets.push(uid());
+    const ticket = { room_id, uid: uid() };
+    tickets.push(JSON.stringify(ticket));
   }
 
   const newTicket = new Ticket({

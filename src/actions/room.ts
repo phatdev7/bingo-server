@@ -1,5 +1,5 @@
 import { Room } from '../models';
-import { Counter } from '../models';
+import { Counter, Ticket } from '../models';
 import { IUser } from '../models/user';
 import { createTicket } from './ticket';
 import uid from 'uniqid';
@@ -84,37 +84,45 @@ const updateRoom = async (room_id: string, params: IParams) => {
   }
 };
 
-const addUserInRoom = (room_id: string, token: string, callback: Function) => {
-  Room.findOne({ id: room_id }, (err, room) => {
-    if (err) {
+const addUserInRoom = (ticket: string, token: string, callback: Function) => {
+  const { room_id, uid } = JSON.parse(ticket);
+
+  Room.findOne({ room_id }, (err, room) => {
+    if (err || !room) {
       return callback('Room does not exist');
-    } else if (!room.status) {
-      const { current_members } = room.toJSON();
-      const idx = current_members.findIndex((item: IUser) => item._id === token || '');
-      let new_current_members = [...current_members];
+    } else if (room.status === 'open') {
+      Ticket.findOne({ room_id }, (err, ticket) => {
+        if (err || !ticket) {
+          callback('Ticket does not exist');
+        } else {
+          const { current_members } = room.toJSON();
+          const idx = current_members.findIndex((item: IUser) => item._id === token || '');
+          let new_current_members = [...current_members];
 
-      if (idx === -1) {
-        new_current_members.push(token);
-      } else {
-        new_current_members = [
-          ...current_members.slice(0, idx),
-          token,
-          ...current_members.slice(idx + 1, current_members.length),
-        ];
-      }
+          if (idx === -1) {
+            new_current_members.push(token);
+          } else {
+            new_current_members = [
+              ...current_members.slice(0, idx),
+              token,
+              ...current_members.slice(idx + 1, current_members.length),
+            ];
+          }
+        }
+      });
 
-      Room.findOneAndUpdate(
-        { id: room_id },
-        {
-          current_members: new_current_members,
-          maybe_start: getMayBeStart(new_current_members),
-          key_member: new_current_members[0] ? new_current_members[0]._id : '',
-        },
-        { new: true },
-        (err, _room) => {
-          callback(err, _room.toJSON());
-        },
-      );
+      // Room.findOneAndUpdate(
+      //   { id: room_id },
+      //   {
+      //     current_members: new_current_members,
+      //     maybe_start: getMayBeStart(new_current_members),
+      //     key_member: new_current_members[0] ? new_current_members[0]._id : '',
+      //   },
+      //   { new: true },
+      //   (err, _room) => {
+      //     callback(err, _room.toJSON());
+      //   },
+      // );
     }
   });
 };
