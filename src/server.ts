@@ -17,10 +17,11 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(routes);
 
-mongoose.connect('mongodb://localhost:27017/bingo', {
+mongoose.connect('mongodb://PC-PhatNguyen:27017,PC-PhatNguyen:27018,PC-PhatNguyen:27019/bingo', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   useFindAndModify: false,
+  replicaSet: 'rs',
 });
 
 import http from 'http';

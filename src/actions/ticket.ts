@@ -1,16 +1,17 @@
 import uid from 'uniqid';
 import Ticket, { ITicket } from '../models/ticket';
 
-export const createTicket = async (room_id: string) => {
-  const tickets = [];
+export const createTicket = async (room_id: string, key_member: string) => {
+  const sale = [];
   for (let i = 0; i < 10; i++) {
     const ticket = { room_id, uid: uid() };
-    tickets.push(JSON.stringify(ticket));
+    sale.push(JSON.stringify(ticket));
   }
 
   const newTicket = new Ticket({
     room_id,
-    tickets,
+    key_member,
+    sale,
     sold: [],
   });
 
@@ -22,7 +23,7 @@ export const getCurrentTicketByRoomId = async (id: string, callback: Function) =
     if (err) {
       callback(err);
     } else {
-      const first = ticket.tickets[0] ? ticket.tickets[0] : null;
+      const first = ticket.sale[0] ? ticket.sale[0] : null;
       callback(null, first);
     }
   });

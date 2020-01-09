@@ -4,6 +4,8 @@ import { IUser } from '../models/user';
 import { createTicket } from './ticket';
 import uid from 'uniqid';
 import mongoose from 'mongoose';
+import { IRoom } from 'src/models/room';
+import { ITicket } from 'src/models/ticket';
 
 interface IParams {
   id: string;
@@ -61,8 +63,8 @@ export const createRoom = async (token: string, title: string, callback: Functio
   finalRoom
     .save()
     .then(async room => {
-      room.toJSON();
-      await createTicket(room.toJSON()._id);
+      const roomJSON = room.toJSON();
+      await createTicket(roomJSON._id, roomJSON.key_member);
       callback(null, room.toJSON());
     })
     .catch(err => {
@@ -88,22 +90,39 @@ const updateRoom = async (room_id: string, params: IParams) => {
 export const addUserInRoom = async (ticket: string, token: string, callback: Function) => {
   const { room_id, uid } = JSON.parse(ticket);
 
-  let session = null;
-  Room.findOne({ _id: room_id }, async (err, room) => {
-    session = await mongoose.startSession();
-    session.startTransaction();
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-    console.log(room_id);
-    console.log(room);
-    return Room.findOneAndUpdate({ _id: room_id }, { max_member: 8 }, { new: true }, (err, abc) => {
-      console.log(abc);
-    });
-  })
-    .then(() => {
-      return Room.find();
+  const room: IRoom = await (await Room.findById(room_id)).toJSON();
+
+  Room.findOneAndUpdate(
+    { _id: room_id },
+    { max_member: room.max_member - 1 },
+    { new: true, session },
+  )
+    .then(async () => {
+      const ticket: ITicket = await (await Ticket.findOne({ room_id })).toJSON();
+
+      const sale = [...ticket.sale.slice(1, ticket.sale.length)];
+      const sold = [...ticket.sold, { uid, token }];
+      return Ticket.findOneAndUpdate(
+        { room_id },
+        {
+          sale,
+          sold,
+        },
+        { session },
+      );
     })
-    .then(doc => {
-      console.log(doc);
+    .then(() => {
+      session.commitTransaction();
+    })
+    .catch(err => {
+      console.log(err);
+
+      session.abortTransaction(() => {
+        session.endSession();
+      });
     });
 
   // if (err || !room) {

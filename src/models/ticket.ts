@@ -2,7 +2,8 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ITicket extends Document {
   room_id: string;
-  tickets: string[];
+  key_member: string;
+  sale: string[];
   sold: [];
 }
 
@@ -11,7 +12,11 @@ const ticketSchema = new Schema({
     type: String,
     required: true,
   },
-  tickets: {
+  key_member: {
+    type: String,
+    required: true,
+  },
+  sale: {
     type: Array,
     default: [],
   },
@@ -25,7 +30,8 @@ ticketSchema.methods.toJSON = function() {
   return {
     _id: this._id.toString(),
     room_id: this.room_id,
-    tickets: this.tickets,
+    key_member: this.key_member,
+    sale: this.sale,
     sold: this.sold,
   };
 };

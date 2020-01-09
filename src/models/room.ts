@@ -25,6 +25,7 @@ const roomSchema = new Schema({
   },
   key_member: {
     type: String,
+    required: true,
   },
   maybe_start: {
     type: Boolean,
