@@ -18,6 +18,7 @@ app.use(bodyParser.json());
 app.use(routes);
 
 mongoose.connect('mongodb://PC-PhatNguyen:27017,PC-PhatNguyen:27018,PC-PhatNguyen:27019/bingo', {
+  useCreateIndex: true,
   useNewUrlParser: true,
   useUnifiedTopology: true,
   useFindAndModify: false,

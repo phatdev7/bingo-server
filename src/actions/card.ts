@@ -1,6 +1,24 @@
 import shuffle from 'shuffle-array';
+import RoomTicket, { IRoomTicket, ICard } from '../models/room_ticket';
 
-export const generate = async (numOfColumn: number, numOfRow: number, numOfWin: number) => {
+interface IResult {
+  card: (
+    | number
+    | {
+        value: number;
+        status: string;
+      }[]
+  )[];
+  num_of_column: number;
+  num_of_row: number;
+  num_of_win: number;
+}
+
+export const generate: (
+  numOfColumn: number,
+  numOfRow: number,
+  numOfWin: number,
+) => Promise<IResult> = async (numOfColumn, numOfRow, numOfWin) => {
   try {
     const data = [
       [1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -47,12 +65,34 @@ export const generate = async (numOfColumn: number, numOfRow: number, numOfWin: 
       return [...prev, expelCell];
     }, []);
 
-    return {
+    const result: IResult = {
       card,
       num_of_column: numOfColumn,
       num_of_row: numOfRow,
       num_of_win: numOfWin,
     };
+
+    return result;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const getCardList: (token: string) => Promise<ICard[]> = async token => {
+  try {
+    const roomTicket = await RoomTicket.find();
+    const cards: ICard[] = [];
+    roomTicket.forEach((element: IRoomTicket) => {
+      const list = element.tickets
+        .filter((item: ICard) => item.token === token)
+        .map((item: ICard) => ({
+          ...item,
+          room_id: element.room_id,
+          title: element.title,
+        }));
+      cards.push(...list);
+    });
+    return cards;
   } catch (err) {
     throw err;
   }

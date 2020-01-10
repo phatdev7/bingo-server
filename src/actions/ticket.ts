@@ -1,30 +1,20 @@
-import uid from 'uniqid';
-import Ticket, { ITicket } from '../models/ticket';
+import generateUID from 'uniqid';
+import { SaveOptions } from 'mongoose';
+import RoomTicket, { IRoomTicket } from '../models/room_ticket';
 
-export const createTicket = async (room_id: string, key_member: string) => {
-  const sale = [];
-  for (let i = 0; i < 10; i++) {
-    const ticket = { room_id, uid: uid() };
-    sale.push(JSON.stringify(ticket));
-  }
-
-  const newTicket = new Ticket({
+export const createTicket: (
+  room_id: string,
+  title: string,
+  key_member: string,
+  options?: SaveOptions,
+) => Promise<IRoomTicket> = async (room_id, title, key_member, options) => {
+  const newTicket = new RoomTicket({
     room_id,
+    title,
     key_member,
-    sale,
     sold: [],
+    current_code: JSON.stringify({ room_id, uid: generateUID() }),
   });
 
-  return newTicket.save();
-};
-
-export const getCurrentTicketByRoomId = async (id: string, callback: Function) => {
-  Ticket.findOne({ room_id: id }, (err: any, ticket: ITicket) => {
-    if (err) {
-      callback(err);
-    } else {
-      const first = ticket.sale[0] ? ticket.sale[0] : null;
-      callback(null, first);
-    }
-  });
+  return newTicket.save(options);
 };

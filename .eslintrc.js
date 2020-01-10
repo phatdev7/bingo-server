@@ -13,7 +13,7 @@ module.exports = {
     "@typescript-eslint/explicit-function-return-type": 0,
     '@typescript-eslint/no-use-before-define': 'off',
     "camelcase": "off",
-    "@typescript-eslint/camelcase": ["error", { "properties": "never", "ignoreDestructuring": false },],
+    "@typescript-eslint/camelcase": ["error", { "properties": "never", "ignoreDestructuring": false }],
     '@typescript-eslint/no-this-alias': [
       'error',
       {

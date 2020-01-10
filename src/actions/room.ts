@@ -1,11 +1,12 @@
 import { Room } from '../models';
-import { Counter, Ticket } from '../models';
+import { Counter } from '../models';
 import { IUser } from '../models/user';
 import { createTicket } from './ticket';
-import uid from 'uniqid';
+import generateUID from 'uniqid';
 import mongoose from 'mongoose';
 import { IRoom } from 'src/models/room';
-import { ITicket } from 'src/models/ticket';
+import RoomTicket, { IRoomTicket, ICard } from 'src/models/room_ticket';
+import { generate } from '../actions/card';
 
 interface IParams {
   id: string;
@@ -52,24 +53,31 @@ export const getRoomByTokenAndRoomId = async (token: string, id: string) => {
 };
 
 export const createRoom = async (token: string, title: string, callback: Function) => {
-  const finalRoom = new Room({
-    title,
-    key_member: token,
-    maxMember: 10,
-    currentMembers: [],
-    maybe_start: false,
-  });
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  finalRoom
-    .save()
-    .then(async room => {
-      const roomJSON = room.toJSON();
-      await createTicket(roomJSON._id, roomJSON.key_member);
-      callback(null, room.toJSON());
-    })
-    .catch(err => {
-      callback(err);
+  try {
+    const finalRoom = new Room({
+      title,
+      maxMember: 10,
+      currentMembers: [],
+      key_member: token,
+      maybe_start: false,
+      status: 'open',
     });
+
+    const room = await finalRoom.save();
+    const roomJSON = room.toJSON();
+    await createTicket(roomJSON._id, title, roomJSON.key_member, { session });
+
+    await session.commitTransaction();
+    callback(null, room.toJSON());
+  } catch (err) {
+    await session.abortTransaction();
+    callback(err);
+  } finally {
+    await session.endSession();
+  }
 };
 
 const updateRoom = async (room_id: string, params: IParams) => {
@@ -87,79 +95,47 @@ const updateRoom = async (room_id: string, params: IParams) => {
   }
 };
 
-export const addUserInRoom = async (ticket: string, token: string, callback: Function) => {
-  const { room_id, uid } = JSON.parse(ticket);
+export const addUserInRoom = async (current_code: string, token: string, callback: Function) => {
+  const { room_id } = JSON.parse(current_code);
 
   const session = await mongoose.startSession();
   session.startTransaction();
 
-  const room: IRoom = await (await Room.findById(room_id)).toJSON();
+  try {
+    const room: IRoom = await Room.findById(room_id);
+    const roomTicket: IRoomTicket = await RoomTicket.findOne({ room_id });
 
-  Room.findOneAndUpdate(
-    { _id: room_id },
-    { max_member: room.max_member - 1 },
-    { new: true, session },
-  )
-    .then(async () => {
-      const ticket: ITicket = await (await Ticket.findOne({ room_id })).toJSON();
-
-      const sale = [...ticket.sale.slice(1, ticket.sale.length)];
-      const sold = [...ticket.sold, { uid, token }];
-      return Ticket.findOneAndUpdate(
+    if (!roomTicket.tickets.find((item: ICard) => item.current_code === current_code)) {
+      const card = await generate(6, 6, 4);
+      const newRoomTicket = await RoomTicket.findOneAndUpdate(
         { room_id },
         {
-          sale,
-          sold,
+          tickets: [...roomTicket.tickets, { token, current_code, card }],
+          current_code: JSON.stringify({ room_id, uid: generateUID() }),
         },
-        { session },
+        { new: true, session },
       );
-    })
-    .then(() => {
-      session.commitTransaction();
-    })
-    .catch(err => {
-      console.log(err);
 
-      session.abortTransaction(() => {
-        session.endSession();
-      });
-    });
+      const newRoom = await Room.findByIdAndUpdate(
+        room_id,
+        {
+          current_members: [...room.current_members, token],
+        },
+        { new: true, session },
+      );
 
-  // if (err || !room) {
-  //   return callback('Room does not exist');
-  // } else if (room.status === 'open') {
-  //   Ticket.findOne({ room_id }, (err, ticket) => {
-  //     if (err || !ticket) {
-  //       callback('Ticket does not exist');
-  //     } else {
-  //       const { current_members } = room.toJSON();
-  //       const idx = current_members.findIndex((item: IUser) => item._id === token || '');
-  //       let new_current_members = [...current_members];
-
-  //       if (idx === -1) {
-  //         new_current_members.push(token);
-  //       } else {
-  //         new_current_members = [
-  //           ...current_members.slice(0, idx),
-  //           token,
-  //           ...current_members.slice(idx + 1, current_members.length),
-  //         ];
-  //       }
-  //     }
-  //   });
-
-  // Room.findOneAndUpdate(
-  //   { id: room_id },
-  //   {
-  //     current_members: new_current_members,
-  //     maybe_start: getMayBeStart(new_current_members),
-  //     key_member: new_current_members[0] ? new_current_members[0]._id : '',
-  //   },
-  //   { new: true },
-  //   (err, _room) => {
-  //     callback(err, _room.toJSON());
-  //   },
-  // );
+      await session.commitTransaction();
+      callback(null, { card, token, room_id });
+    } else {
+      await session.abortTransaction();
+      callback('current_code is exists');
+    }
+  } catch (err) {
+    await session.abortTransaction();
+    callback(err);
+  } finally {
+    session.endSession();
+  }
 };
 
 const removeUserInRoom = (room_id: string, user: IUser, callback: Function) => {
