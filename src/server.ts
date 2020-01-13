@@ -3,7 +3,8 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import path from 'path';
-import mongoose from 'mongoose';
+import mongoose, { mongo } from 'mongoose';
+import { MongoClient } from 'mongodb';
 import routes from './routes';
 import config from '../config';
 import sockets from './sockets';
@@ -17,13 +18,15 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(routes);
 
-mongoose.connect('mongodb://PC-PhatNguyen:27017,PC-PhatNguyen:27018,PC-PhatNguyen:27019/bingo', {
-  useCreateIndex: true,
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  useFindAndModify: false,
-  replicaSet: 'rs',
-});
+mongoose.connect(
+  'mongodb://PC-PhatNguyen:27017,PC-PhatNguyen:27018,PC-PhatNguyen:27019/bingo?replicaSet=rs?retryWrites=false',
+  {
+    useCreateIndex: true,
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useFindAndModify: false,
+  },
+);
 
 import http from 'http';
 const server = http.createServer(app);
