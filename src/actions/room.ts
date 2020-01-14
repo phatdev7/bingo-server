@@ -4,7 +4,6 @@ import { IUser } from '../models/user';
 import { createTicket } from './ticket';
 import generateUID from 'uniqid';
 import mongoose from 'mongoose';
-import mongo from 'mongodb';
 import { IRoom } from 'src/models/room';
 import RoomTicket, { IRoomTicket, ICard } from 'src/models/room_ticket';
 import { generate } from '../actions/card';
