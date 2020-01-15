@@ -1,17 +1,18 @@
 import { Router } from 'express';
 const route = Router();
-import { auth } from '../../actions/access_token';
-import { getCurrenRoomByToken, createRoom, getRoomByTokenAndRoomId } from '../../actions/room';
-import { getRoomTicket } from '../../actions/room_ticket';
-import { IRoomTicket } from '../../models/room_ticket';
-import { IRoom } from '../../models/room';
+import { auth } from 'src/actions/user';
+import { getCurrenRoom, createRoom, getRoomByUserIdAndRoomId } from 'src/actions/room';
+import { getRoomTicket } from 'src/actions/room_ticket';
+import { IRoomTicket } from 'src/models/room_ticket';
+import { IRoom } from 'src/models/room';
+import { IUser } from 'src/models/user';
 
 route.post('/current', (req, res) => {
-  auth(req, (err: any, token: string) => {
+  auth(req, (err: any, user: IUser) => {
     if (err) {
       res.status(401).json({ errors: 'Unauthencation' });
     } else {
-      getCurrenRoomByToken(token)
+      getCurrenRoom(user._id)
         .then(rooms => {
           res.json({ rooms });
         })
@@ -41,11 +42,11 @@ route.post('/', (req, res) => {
 });
 
 route.get('/:id', (req, res) => {
-  auth(req, (err: any, token: string) => {
+  auth(req, (err: any, user: IUser) => {
     if (err) {
       res.status(401).json({ errors: 'Unauthencation' });
     } else {
-      getRoomByTokenAndRoomId(token, req.params.id)
+      getRoomByUserIdAndRoomId(user._id, req.params.id)
         .then(room => {
           res.json(room);
         })

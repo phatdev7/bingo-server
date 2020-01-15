@@ -5,16 +5,12 @@ import { IUser } from '../../models/user';
 
 export interface ISocket extends Socket {
   room_id: string;
-  user: {
-    token: string;
-  };
+  user: IUser;
 }
 
 export interface IParams {
   room_id: string;
-  user: {
-    token: string;
-  };
+  user: IUser;
 }
 
 class AbsHandler {
@@ -22,6 +18,7 @@ class AbsHandler {
   sender: any;
   caching: any;
   cachingKey: string;
+
   constructor(cmd: string) {
     this.cmd = cmd;
     this.sender = Sender;

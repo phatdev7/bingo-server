@@ -1,4 +1,4 @@
-import AccessToken, { IAccessToken } from '../models/access_token';
+import User, { IUser } from 'src/models/user';
 import config from '../../config';
 import uid from 'uniqid';
 
@@ -9,11 +9,11 @@ export const auth = async (req: any, callback: Function) => {
       : req.cookies[config.authCookieKey];
 
   if (authCookie && authCookie.token) {
-    AccessToken.findOne({ token: authCookie.token }, (err, successData: IAccessToken) => {
+    User.findOne({ token: authCookie.token }, (err, successData: IUser) => {
       if (err || !successData) {
         callback(err);
       } else {
-        callback(null, successData.toJSON().token);
+        callback(null, successData.toJSON());
       }
     });
   } else {
@@ -21,15 +21,16 @@ export const auth = async (req: any, callback: Function) => {
   }
 };
 
-export const createToken = (callback: Function) => {
-  const newAccessToken = new AccessToken({
+export const createUser = (name: string, callback: Function) => {
+  const newUser = new User({
+    name,
     token: uid(),
   });
 
-  newAccessToken
+  newUser
     .save()
-    .then((access_token: IAccessToken) => {
-      callback(null, access_token.token);
+    .then((user: IUser) => {
+      callback(null, user);
     })
     .catch(err => {
       callback(err);

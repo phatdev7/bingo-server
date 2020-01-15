@@ -23,15 +23,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(routes);
 
-mongoose.connect(
-  'mongodb://localhost:27001,localhost:27002,localhost:27003/bingo?replicaSet=rs?retryWrites=false',
-  {
-    useCreateIndex: true,
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    useFindAndModify: false,
-  },
-);
+mongoose.connect('mongodb://localhost:27001,localhost:27002,localhost:27003/bingo?replicaSet=rs', {
+  useCreateIndex: false,
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useFindAndModify: false,
+});
 
 import http from 'http';
 const server = http.createServer(app);

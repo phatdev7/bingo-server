@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { IUser } from './user';
 
 export interface IRoomTicket extends Document {
   room_id: string;
@@ -10,7 +11,7 @@ export interface IRoomTicket extends Document {
 
 export interface ICard {
   card: [];
-  token: string;
+  user: IUser;
   current_code: string;
 }
 

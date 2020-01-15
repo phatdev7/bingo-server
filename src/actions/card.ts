@@ -1,5 +1,5 @@
 import shuffle from 'shuffle-array';
-import RoomTicket, { IRoomTicket, ICard } from '../models/room_ticket';
+import RoomTicket, { IRoomTicket, ICard } from 'src/models/room_ticket';
 
 interface IResult {
   card: (
@@ -78,13 +78,13 @@ export const generate: (
   }
 };
 
-export const getCardList: (token: string) => Promise<ICard[]> = async token => {
+export const getCardList: (user_id: string) => Promise<ICard[]> = async user_id => {
   try {
     const roomTicket = await RoomTicket.find();
     const cards: ICard[] = [];
     roomTicket.forEach((element: IRoomTicket) => {
       const list = element.tickets
-        .filter((item: ICard) => item.token === token)
+        .filter((item: ICard) => item.user._id === user_id)
         .map((item: ICard) => ({
           ...item,
           room_id: element.room_id,

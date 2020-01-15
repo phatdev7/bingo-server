@@ -1,6 +1,6 @@
 import generateUID from 'uniqid';
 import { SaveOptions } from 'mongoose';
-import RoomTicket, { IRoomTicket } from '../models/room_ticket';
+import RoomTicket, { IRoomTicket } from 'src/models/room_ticket';
 
 export const createTicket: (
   room_id: string,
