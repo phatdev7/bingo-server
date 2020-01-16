@@ -1,35 +1,29 @@
 import SendData from '../SendData';
 import AbsHandler, { ISocket, IParams } from './AbsHandler';
 import { createRoom } from 'src/actions/room';
+import {} from 'src/actions/game';
 import { IRoom } from 'src/models/room';
-import { ICardSize } from 'src/models/room_ticket';
 
 interface IParams2 extends IParams {
-  cardSize: ICardSize;
+  room_id: string;
 }
 
-class CreateRoomHandler extends AbsHandler {
+class CreateGameHandler extends AbsHandler {
   checkParams = async (params: IParams2) => {
-    const { user, cardSize } = params;
+    const { user, room_id } = params;
     if (!user._id) {
       return 'User_id is required';
-    } else if (!cardSize.title) {
-      return 'Title is required';
-    } else if (!cardSize.num_of_column) {
-      return 'num_of_column is required';
-    } else if (!cardSize.num_of_row) {
-      return 'num_of_row is required';
-    } else if (!cardSize.num_of_win) {
-      return 'num_of_win is required';
+    } else if (!room_id) {
+      return 'Room_id is required';
     }
 
     return '';
   };
 
   doHandleMessage = async (socket: ISocket, params: IParams2, sendData: SendData) => {
-    const { user, cardSize } = params;
+    const { user, room_id } = params;
 
-    createRoom(user._id, cardSize, (err: any, _room: IRoom) => {
+    createRoom(user._id, room_id, (err: any, _room: IRoom) => {
       if (err) {
         sendData.setError(err);
         this.sender.send(socket, sendData);
@@ -47,4 +41,4 @@ class CreateRoomHandler extends AbsHandler {
   };
 }
 
-export default CreateRoomHandler;
+export default CreateGameHandler;

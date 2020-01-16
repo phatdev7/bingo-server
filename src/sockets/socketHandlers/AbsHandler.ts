@@ -1,7 +1,7 @@
 import { Socket } from 'socket.io';
 import SendData from '../SendData';
 import Sender from '../Sender';
-import { IUser } from '../../models/user';
+import { IUser } from 'src/models/user';
 
 export interface ISocket extends Socket {
   room_id: string;

@@ -5,7 +5,7 @@ import { createTicket } from './ticket';
 import generateUID from 'uniqid';
 import mongoose from 'mongoose';
 import { IRoom } from 'src/models/room';
-import RoomTicket, { IRoomTicket, ICard } from 'src/models/room_ticket';
+import RoomTicket, { IRoomTicket, ICard, ICardSize } from 'src/models/room_ticket';
 import { generate } from 'src/actions/card';
 
 interface IParams {
@@ -52,14 +52,14 @@ export const getRoomByUserIdAndRoomId = async (user_id: string, id: string) => {
   return Room.findOne({ key_member: user_id, _id: id }).exec();
 };
 
-export const createRoom = async (user_id: string, title: string, callback: Function) => {
+export const createRoom = async (user_id: string, cardSize: ICardSize, callback: Function) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
     await RoomTicket.createCollection();
     const finalRoom = new Room({
-      title,
+      ...cardSize,
       maxMember: 10,
       currentMembers: [],
       key_member: user_id,
@@ -69,7 +69,7 @@ export const createRoom = async (user_id: string, title: string, callback: Funct
 
     const room = await finalRoom.save();
     const roomJSON = room.toJSON();
-    await createTicket(roomJSON._id, title, roomJSON.key_member, { session });
+    await createTicket(roomJSON._id, cardSize, roomJSON.key_member, { session });
 
     await session.commitTransaction();
     callback(null, room.toJSON());
@@ -107,7 +107,11 @@ export const addUserInRoom = async (current_code: string, user: IUser, callback:
     const roomTicket: IRoomTicket = await RoomTicket.findOne({ room_id });
 
     if (!roomTicket.tickets.find((item: ICard) => item.current_code === current_code)) {
-      const card = await generate(6, 6, 4);
+      const card = await generate(
+        roomTicket.num_of_column,
+        roomTicket.num_of_row,
+        roomTicket.num_of_win,
+      );
       const new_code = JSON.stringify({ room_id, uid: generateUID() });
       const newRoomTicket = await RoomTicket.findOneAndUpdate(
         { room_id },
@@ -121,7 +125,10 @@ export const addUserInRoom = async (current_code: string, user: IUser, callback:
       const newRoom = await Room.findByIdAndUpdate(
         room_id,
         {
-          current_members: [...room.current_members, user],
+          current_members: [
+            ...room.current_members.filter((item: IUser) => item._id !== user._id),
+            user,
+          ],
         },
         { new: true, session },
       );
