@@ -1,6 +1,11 @@
 import Commands from './Commands';
 import config from '../../config';
-import { CreateRoomHandler, JoinRoomHandler, ScanQRCodeHandler } from './socketHandlers';
+import {
+  CreateRoomHandler,
+  JoinRoomHandler,
+  ScanQRCodeHandler,
+  CreateGameHandler,
+} from './socketHandlers';
 import { ISocket } from './socketHandlers/AbsHandler';
 const { authCookieKey } = config;
 
@@ -20,6 +25,11 @@ export default (socket: ISocket) => {
 
   socket.on(Commands.scanQRCode, params => {
     const handler = new ScanQRCodeHandler(Commands.scanQRCode);
+    handler.handleMessage(socket, params);
+  });
+
+  socket.on(Commands.createGame, params => {
+    const handler = new CreateGameHandler(Commands.createGame);
     handler.handleMessage(socket, params);
   });
 };

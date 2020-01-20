@@ -3,4 +3,6 @@ export default {
   joinRoom: 'joinRoom',
   scanQRCode: 'scanQRCode',
   createGame: 'createGame',
+  countDownInitGame: 'countDownInitGame',
+  dialGame: 'dialGame',
 };

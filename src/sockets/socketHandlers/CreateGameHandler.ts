@@ -1,8 +1,9 @@
 import SendData from '../SendData';
 import AbsHandler, { ISocket, IParams } from './AbsHandler';
-import { createRoom } from 'src/actions/room';
-import {} from 'src/actions/game';
-import { IRoom } from 'src/models/room';
+import { createGame, Dial } from 'src/actions/game';
+import { IGame } from 'src/models/game';
+import Commands from '../Commands';
+import CountDownHandler from './CountDownHandler';
 
 interface IParams2 extends IParams {
   room_id: string;
@@ -20,25 +21,48 @@ class CreateGameHandler extends AbsHandler {
     return '';
   };
 
-  doHandleMessage = async (socket: ISocket, params: IParams2, sendData: SendData) => {
+  doHandleMessage = async (
+    socket: ISocket,
+    params: IParams2,
+    sendData: SendData,
+  ) => {
     const { user, room_id } = params;
 
-    createRoom(user._id, room_id, (err: any, _room: IRoom) => {
+    createGame(user._id, room_id, (err: any, game: IGame) => {
       if (err) {
         sendData.setError(err);
         this.sender.send(socket, sendData);
       } else {
-        if (socket.room_id) {
-          socket.leave(socket.room_id);
-        }
-        socket.room_id = _room._id;
-        socket.user = user;
-        socket.join(socket.room_id);
-        sendData.addParam('room', _room);
+        sendData.addParam('game', game);
         this.sender.broadCastInRoom(socket.room_id, sendData);
+
+        this.handleCountDownInitGame(room_id, game._id);
       }
     });
   };
+
+  async handleCountDownInitGame(room_id, game_id) {
+    let countDown = 10;
+
+    const _interval = setInterval(async () => {
+      if (countDown < 0) {
+        clearInterval(_interval);
+
+        const game = await Dial(game_id);
+
+        const _sendData = new SendData(Commands.dialGame);
+        _sendData.addParam('game', game);
+        this.sender.broadCastInRoom(room_id, _sendData);
+
+        CountDownHandler.handleDial(game);
+      } else {
+        const _sendData = new SendData(Commands.countDownInitGame);
+        _sendData.addParam('count_down', countDown);
+        this.sender.broadCastInRoom(room_id, _sendData);
+      }
+      countDown -= 1;
+    }, 1000);
+  }
 }
 
 export default CreateGameHandler;
