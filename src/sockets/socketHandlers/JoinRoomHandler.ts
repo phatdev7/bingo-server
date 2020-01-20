@@ -1,5 +1,7 @@
 import SendData from '../SendData';
 import AbsHandler, { ISocket, IParams } from './AbsHandler';
+import { getRoomById } from 'src/actions/room';
+import { IRoom } from 'src/models/room';
 
 interface IParams2 extends IParams {
   room_id: string;
@@ -16,16 +18,29 @@ class JoinRoomHandler extends AbsHandler {
     return '';
   };
 
-  doHandleMessage = async (socket: ISocket, params: IParams2, sendData: SendData) => {
+  doHandleMessage = async (
+    socket: ISocket,
+    params: IParams2,
+    sendData: SendData,
+  ) => {
     const { room_id, user } = params;
 
-    if (socket.room_id) {
-      socket.leave(socket.room_id);
-    }
-    socket.room_id = room_id;
-    socket.user = user;
-    socket.join(socket.room_id);
-    this.sender.broadCastInRoom(socket.room_id, sendData);
+    getRoomById(room_id)
+      .then((room: IRoom) => {
+        if (socket.room_id) {
+          socket.leave(socket.room_id);
+        }
+        socket.room_id = room_id;
+        socket.user = user;
+        socket.join(socket.room_id);
+
+        sendData.addParam('room', room);
+        this.sender.broadCastInRoom(socket.room_id, sendData);
+      })
+      .catch((err: any) => {
+        sendData.setError(err);
+        this.sender.send(socket, sendData);
+      });
   };
 }
 

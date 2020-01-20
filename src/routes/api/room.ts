@@ -1,7 +1,11 @@
 import { Router } from 'express';
 const route = Router();
 import { auth } from 'src/actions/user';
-import { getCurrenRoom, createRoom, getRoomByUserIdAndRoomId } from 'src/actions/room';
+import {
+  getCurrenRoom,
+  createRoom,
+  getRoomByUserIdAndRoomId,
+} from 'src/actions/room';
 import { getRoomTicket } from 'src/actions/room_ticket';
 import { IRoomTicket, ICardSize } from 'src/models/room_ticket';
 import { IRoom } from 'src/models/room';
@@ -24,8 +28,8 @@ route.post('/current', (req, res) => {
 });
 
 route.post('/', (req, res) => {
-  auth(req, (err: any, token: string) => {
-    if (err) {
+  auth(req, (err: any, user: IUser) => {
+    if (err || !user) {
       res.status(401).json({ errors: 'Unauthencation' });
     } else {
       const { title, num_of_column, num_of_row, num_of_win } = req.body;
@@ -38,8 +42,13 @@ route.post('/', (req, res) => {
       } else if (!num_of_win) {
         res.status(400).json({ errors: 'num_of_win is required' });
       } else {
-        const cardSize: ICardSize = { title, num_of_column, num_of_row, num_of_win };
-        createRoom(token, cardSize, (err: any, room: IRoom) => {
+        const cardSize: ICardSize = {
+          title,
+          num_of_column,
+          num_of_row,
+          num_of_win,
+        };
+        createRoom(user._id, cardSize, (err: any, room: IRoom) => {
           if (err) {
             res.status(404).json({ errors: err });
           } else {
@@ -68,8 +77,8 @@ route.get('/:id', (req, res) => {
 });
 
 route.get('/:id/current_code', (req, res) => {
-  auth(req, (err: any) => {
-    if (err) {
+  auth(req, (err: any, user: IUser) => {
+    if (err || !user) {
       res.status(401).json({ errors: 'Unauthencation' });
     } else {
       getRoomTicket(req.params.id)
@@ -84,8 +93,8 @@ route.get('/:id/current_code', (req, res) => {
 });
 
 route.get('/:id/tickets', (req, res) => {
-  auth(req, (err: any) => {
-    if (err) {
+  auth(req, (err: any, user: IUser) => {
+    if (err || !user) {
       res.status(401).json({ errors: 'Unauthencation' });
     } else {
       getRoomTicket(req.params.id)

@@ -1,16 +1,16 @@
 import mongoose, { SaveOptions } from 'mongoose';
 import shuffle from 'shuffle-array';
 import generateUID from 'uniqid';
-import { SaveOptions } from 'mongoose';
 import Game, { IGame } from 'src/models/game';
-import RoomTicket, { IRoomTicket, ICardSize } from 'src/models/room_ticket';
+import RoomTicket, {
+  IRoomTicket,
+  ICardSize,
+  ITicket,
+  ICard,
+} from 'src/models/room_ticket';
 import Room, { IRoom } from 'src/models/room';
 
-export const createGame = async (
-  user_id: string,
-  room_id: string,
-  callback: Function,
-) => {
+export const createGame = async (user_id: string, room_id: string) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -18,11 +18,9 @@ export const createGame = async (
     const room = await Room.findById(room_id);
 
     if (room.status !== 'open') {
-      await session.abortTransaction();
-      callback('Room has been started');
+      throw 'Room has been started';
     } else if (room.key_member !== user_id) {
-      await session.abortTransaction();
-      callback('You are not room owner');
+      throw 'You are not room owner';
     } else {
       await Room.findByIdAndUpdate(
         room_id,
@@ -36,12 +34,13 @@ export const createGame = async (
         push: [],
       });
 
-      await newGame.save({ session });
+      const game = await newGame.save({ session });
       await session.commitTransaction();
+      return game.toJSON();
     }
   } catch (err) {
     await session.abortTransaction();
-    callback(err);
+    return Promise.reject(err);
   } finally {
     session.endSession();
   }
@@ -63,17 +62,26 @@ export const updateGame = async (
   }
 };
 
-export const Dial = async (gameId: string) => {
+export const Dial = async (roomId: string) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    if (!gameId) {
-      return Promise.reject('Game_id is required');
+    if (!roomId) {
+      throw 'Room_id is required';
     } else {
-      const game = await Game.findById(gameId);
+      const game = await Game.findOne({ room_id: roomId });
+      const roomTicket = await RoomTicket.findOne({
+        room_id: roomId,
+      });
       if (!game) {
-        return Promise.reject('Game not found');
+        throw 'Game not found';
+      } else if (!roomTicket) {
+        throw 'Room Ticket not found';
+      } else if (roomTicket.tickets.length === 0) {
+        throw 'Have not tickets';
+      } else if (game.pull.length === 0) {
+        throw 'Pull length == 0';
       } else {
         const idx = Math.floor(Math.random() * game.pull.length);
         const pull = [
@@ -84,8 +92,8 @@ export const Dial = async (gameId: string) => {
         const just_announced = game.pull[idx];
         const push = [...game.push, just_announced];
 
-        const _game = await Game.findByIdAndUpdate(
-          gameId,
+        const _game = await Game.findOneAndUpdate(
+          { room_id: roomId },
           {
             pull,
             push,
@@ -94,13 +102,33 @@ export const Dial = async (gameId: string) => {
           { new: true, session },
         );
 
+        const tickets: ITicket[] = [];
+        roomTicket.tickets.forEach((ticket: ITicket) => {
+          const card: ICard = JSON.parse(JSON.stringify(ticket.card));
+          for (let i = 0; i < card.matrix.length; i++) {
+            const cell: any = card.matrix[i][Math.floor(just_announced / 10)];
+            if (cell.value === just_announced && cell.status === 'available') {
+              cell.status = 'announced';
+            }
+          }
+          tickets.push({ ...ticket, card });
+        });
+
+        const _roomTicket = await RoomTicket.findOneAndUpdate(
+          { room_id: roomId },
+          {
+            tickets,
+          },
+          { new: true, session },
+        );
+
         await session.commitTransaction();
-        return _game.toJSON();
+        return { game: _game.toJSON(), room_ticket: _roomTicket.toJSON() };
       }
     }
   } catch (err) {
     await session.abortTransaction();
-    return Promise.reject(err);
+    return await Promise.reject(err);
   } finally {
     session.endSession();
   }

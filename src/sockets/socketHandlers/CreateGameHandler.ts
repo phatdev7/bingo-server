@@ -28,37 +28,46 @@ class CreateGameHandler extends AbsHandler {
   ) => {
     const { user, room_id } = params;
 
-    createGame(user._id, room_id, (err: any, game: IGame) => {
-      if (err) {
-        sendData.setError(err);
-        this.sender.send(socket, sendData);
-      } else {
+    createGame(user._id, room_id)
+      .then((game: IGame) => {
         sendData.addParam('game', game);
         this.sender.broadCastInRoom(socket.room_id, sendData);
 
-        this.handleCountDownInitGame(room_id, game._id);
-      }
-    });
+        this.handleCountDownInitGame(room_id, game._id, socket, sendData);
+      })
+      .catch((err: any) => {
+        sendData.setError(err);
+        this.sender.send(socket, sendData);
+      });
   };
 
-  async handleCountDownInitGame(room_id, game_id) {
+  async handleCountDownInitGame(
+    roomId: string,
+    gameId: string,
+    socket: ISocket,
+    sendData: SendData,
+  ) {
     let countDown = 10;
 
-    const _interval = setInterval(async () => {
+    const _interval = setInterval(() => {
       if (countDown < 0) {
         clearInterval(_interval);
+        Dial(roomId)
+          .then(data => {
+            const _sendData = new SendData(Commands.dialGame);
+            _sendData.addParam('data', data);
+            this.sender.broadCastInRoom(roomId, _sendData);
 
-        const game = await Dial(game_id);
-
-        const _sendData = new SendData(Commands.dialGame);
-        _sendData.addParam('game', game);
-        this.sender.broadCastInRoom(room_id, _sendData);
-
-        CountDownHandler.handleDial(game);
+            CountDownHandler.handleDial(roomId);
+          })
+          .catch(err => {
+            // sendData.setError(err);
+            // this.sender.send(socket, sendData);
+          });
       } else {
         const _sendData = new SendData(Commands.countDownInitGame);
         _sendData.addParam('count_down', countDown);
-        this.sender.broadCastInRoom(room_id, _sendData);
+        this.sender.broadCastInRoom(roomId, _sendData);
       }
       countDown -= 1;
     }, 1000);

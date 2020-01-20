@@ -21,17 +21,21 @@ class ScanQRCodeHandler extends AbsHandler {
     return '';
   };
 
-  doHandleMessage = async (socket: ISocket, params: IParams2, sendData: SendData) => {
+  doHandleMessage = async (
+    socket: ISocket,
+    params: IParams2,
+    sendData: SendData,
+  ) => {
     const { current_code, user } = params;
 
-    addUserInRoom(
-      current_code,
-      user,
-      (err: string, data: { card: any; user: IUser; room_id: string; new_code: string }) => {
-        if (err) {
-          sendData.setError(err);
-          this.sender.send(socket, sendData);
-        } else {
+    addUserInRoom(current_code, user)
+      .then(
+        (data: {
+          card: any;
+          user: IUser;
+          room_id: string;
+          new_code: string;
+        }) => {
           if (socket.room_id) socket.leave(socket.room_id);
           socket.room_id = data.room_id;
           socket.user = user;
@@ -42,9 +46,12 @@ class ScanQRCodeHandler extends AbsHandler {
             .addParam('room_id', data.room_id)
             .addParam('new_code', data.new_code);
           this.sender.broadCastInRoom(socket.room_id, sendData);
-        }
-      },
-    );
+        },
+      )
+      .catch((err: any) => {
+        sendData.setError(err);
+        this.sender.send(socket, sendData);
+      });
   };
 }
 

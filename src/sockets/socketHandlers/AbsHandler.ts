@@ -32,7 +32,11 @@ class AbsHandler {
     return '';
   };
 
-  doHandleMessage: Function = async (socket: ISocket, params: IParams, sendData: SendData) => {
+  doHandleMessage: Function = async (
+    socket: ISocket,
+    params: IParams,
+    sendData: SendData,
+  ) => {
     throw new Error(`Not implement handle function yet: ${this.cmd}`);
   };
 

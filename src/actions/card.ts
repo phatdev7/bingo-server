@@ -1,8 +1,8 @@
 import shuffle from 'shuffle-array';
-import RoomTicket, { IRoomTicket, ICard } from 'src/models/room_ticket';
+import RoomTicket, { IRoomTicket, ITicket } from 'src/models/room_ticket';
 
 interface IResult {
-  card: (
+  matrix: (
     | number
     | {
         value: number;
@@ -47,9 +47,9 @@ export const generate: (
       normalize.push(row);
     }
 
-    const card = normalize.reduce((prev, row) => {
+    const matrix = normalize.reduce((prev, row) => {
       const options = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].slice(0, row.length);
-      const rd = shuffle.pick(options, { picks: 4 });
+      const rd = shuffle.pick(options, { picks: numOfWin });
       const expelCell = row.map((cell, index) => {
         if (rd.includes(index)) {
           return {
@@ -66,7 +66,7 @@ export const generate: (
     }, []);
 
     const result: IResult = {
-      card,
+      matrix,
       num_of_column: numOfColumn,
       num_of_row: numOfRow,
       num_of_win: numOfWin,
@@ -78,14 +78,16 @@ export const generate: (
   }
 };
 
-export const getCardList: (user_id: string) => Promise<ICard[]> = async user_id => {
+export const getTicketList: (
+  user_id: string,
+) => Promise<ITicket[]> = async user_id => {
   try {
     const roomTicket = await RoomTicket.find();
-    const cards: ICard[] = [];
+    const cards: ITicket[] = [];
     roomTicket.forEach((element: IRoomTicket) => {
       const list = element.tickets
-        .filter((item: ICard) => item.user._id === user_id)
-        .map((item: ICard) => ({
+        .filter((item: ITicket) => item.user._id === user_id)
+        .map((item: ITicket) => ({
           ...item,
           room_id: element.room_id,
           title: element.title,

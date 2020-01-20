@@ -13,7 +13,14 @@ export interface IRoomTicket extends Document {
 }
 
 export interface ICard {
-  card: [];
+  matrix: number[][];
+  num_of_column: number;
+  num_of_row: number;
+  num_of_win: number;
+}
+
+export interface ITicket {
+  card: ICard;
   user: IUser;
   current_code: string;
 }

@@ -1,19 +1,19 @@
 import { Room } from 'src/models';
 import { Counter } from 'src/models';
-import user, { IUser } from 'src/models/user';
+import User, { IUser } from 'src/models/user';
 import { createTicket } from './ticket';
 import generateUID from 'uniqid';
 import mongoose from 'mongoose';
 import { IRoom } from 'src/models/room';
-import RoomTicket, { IRoomTicket, ICard, ICardSize } from 'src/models/room_ticket';
+import RoomTicket, {
+  IRoomTicket,
+  ITicket,
+  ICardSize,
+} from 'src/models/room_ticket';
 import { generate } from 'src/actions/card';
 
 interface IParams {
   id: string;
-}
-
-interface IBody {
-  name: string;
 }
 
 const getNextSequenceValue = async () => {
@@ -32,16 +32,11 @@ const getRooms = () => {
     .catch(err => err);
 };
 
-const getRoomById = (params: IParams, callback: Function) => {
-  if (!params.id) {
-    return callback({ status: 405, msg: 'Id is required' });
+export const getRoomById = async (id: string) => {
+  if (!id) {
+    return Promise.reject('Room Id is required');
   }
-  return Room.findOne({ id: params.id }, (err, room) => {
-    if (err) {
-      return callback({ status: 405, msg: 'Room does not exist}' });
-    }
-    return callback(null, room.toJSON());
-  });
+  return await Room.findById(id);
 };
 
 export const getCurrenRoom = async (user_id: string) => {
@@ -52,7 +47,11 @@ export const getRoomByUserIdAndRoomId = async (user_id: string, id: string) => {
   return Room.findOne({ key_member: user_id, _id: id }).exec();
 };
 
-export const createRoom = async (user_id: string, cardSize: ICardSize, callback: Function) => {
+export const createRoom = async (
+  user_id: string,
+  cardSize: ICardSize,
+  callback: Function,
+) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -69,7 +68,9 @@ export const createRoom = async (user_id: string, cardSize: ICardSize, callback:
 
     const room = await finalRoom.save();
     const roomJSON = room.toJSON();
-    await createTicket(roomJSON._id, cardSize, roomJSON.key_member, { session });
+    await createTicket(roomJSON._id, cardSize, roomJSON.key_member, {
+      session,
+    });
 
     await session.commitTransaction();
     callback(null, room.toJSON());
@@ -87,7 +88,11 @@ const updateRoom = async (room_id: string, params: IParams) => {
       throw 'Room_id is required';
     }
 
-    const room = await Room.findOneAndUpdate(room_id, { ...params }, { new: true })
+    const room = await Room.findOneAndUpdate(
+      room_id,
+      { ...params },
+      { new: true },
+    )
       .then(room => room.toJSON())
       .catch(err => ({}));
     return room;
@@ -96,7 +101,7 @@ const updateRoom = async (room_id: string, params: IParams) => {
   }
 };
 
-export const addUserInRoom = async (current_code: string, user: IUser, callback: Function) => {
+export const addUserInRoom = async (current_code: string, user: IUser) => {
   const { room_id } = JSON.parse(current_code);
 
   const session = await mongoose.startSession();
@@ -106,14 +111,24 @@ export const addUserInRoom = async (current_code: string, user: IUser, callback:
     const room: IRoom = await Room.findById(room_id);
     const roomTicket: IRoomTicket = await RoomTicket.findOne({ room_id });
 
-    if (!roomTicket.tickets.find((item: ICard) => item.current_code === current_code)) {
+    if (!room) {
+      throw 'Room not found';
+    } else if (!roomTicket) {
+      throw 'Ticket Room not found';
+    } else if (
+      roomTicket.tickets.find(
+        (item: ITicket) => item.current_code === current_code,
+      )
+    ) {
+      throw 'The code was used';
+    } else {
       const card = await generate(
         roomTicket.num_of_column,
         roomTicket.num_of_row,
         roomTicket.num_of_win,
       );
       const new_code = JSON.stringify({ room_id, uid: generateUID() });
-      const newRoomTicket = await RoomTicket.findOneAndUpdate(
+      await RoomTicket.findOneAndUpdate(
         { room_id },
         {
           tickets: [...roomTicket.tickets, { user, current_code, card }],
@@ -122,11 +137,13 @@ export const addUserInRoom = async (current_code: string, user: IUser, callback:
         { new: true, session },
       );
 
-      const newRoom = await Room.findByIdAndUpdate(
+      await Room.findByIdAndUpdate(
         room_id,
         {
           current_members: [
-            ...room.current_members.filter((item: IUser) => item._id !== user._id),
+            ...room.current_members.filter(
+              (item: IUser) => item._id !== user._id,
+            ),
             user,
           ],
         },
@@ -134,14 +151,11 @@ export const addUserInRoom = async (current_code: string, user: IUser, callback:
       );
 
       await session.commitTransaction();
-      callback(null, { card, user, room_id, new_code });
-    } else {
-      await session.abortTransaction();
-      callback('The code was used');
+      return { card, user, room_id, new_code };
     }
   } catch (err) {
     await session.abortTransaction();
-    callback(err);
+    return Promise.reject(err);
   } finally {
     session.endSession();
   }
@@ -244,9 +258,14 @@ const startRoom = (room_id: string, callback: Function) => {
     if (err) {
       return callback('Room does not exist');
     } else if (!room.status) {
-      Room.findOneAndUpdate({ id: room.id }, { active: true }, { new: true }, (err, _room) => {
-        callback(err, _room.toJSON());
-      });
+      Room.findOneAndUpdate(
+        { id: room.id },
+        { active: true },
+        { new: true },
+        (err, _room) => {
+          callback(err, _room.toJSON());
+        },
+      );
     }
   });
 };
