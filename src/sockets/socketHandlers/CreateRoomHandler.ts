@@ -26,7 +26,11 @@ class CreateRoomHandler extends AbsHandler {
     return '';
   };
 
-  doHandleMessage = async (socket: ISocket, params: IParams2, sendData: SendData) => {
+  doHandleMessage = async (
+    socket: ISocket,
+    params: IParams2,
+    sendData: SendData,
+  ) => {
     const { user, cardSize } = params;
 
     createRoom(user._id, cardSize, (err: any, _room: IRoom) => {

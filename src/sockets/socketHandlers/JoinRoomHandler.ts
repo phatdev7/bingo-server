@@ -3,12 +3,8 @@ import AbsHandler, { ISocket, IParams } from './AbsHandler';
 import { getRoomById } from 'src/actions/room';
 import { IRoom } from 'src/models/room';
 
-interface IParams2 extends IParams {
-  room_id: string;
-}
-
 class JoinRoomHandler extends AbsHandler {
-  checkParams = async (params: IParams2) => {
+  checkParams = async (params: IParams) => {
     const { room_id, user } = params;
     if (!room_id) {
       return 'Room_id is required';
@@ -20,7 +16,7 @@ class JoinRoomHandler extends AbsHandler {
 
   doHandleMessage = async (
     socket: ISocket,
-    params: IParams2,
+    params: IParams,
     sendData: SendData,
   ) => {
     const { room_id, user } = params;

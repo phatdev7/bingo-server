@@ -5,27 +5,8 @@ import { IUser } from 'src/models/user';
 import config from '../../../config';
 
 route.post('/access_token', (req, res) => {
-  auth(req, (err: any, user: IUser) => {
-    if (err || !user) {
-      res.clearCookie(config.authCookieKey);
-      res.status(401).json({ errors: 'Unauthencation' });
-      // createUser((err: any, user: IUser) => {
-      //   if (err) {
-      //     res.clearCookie(config.authCookieKey);
-      //     res.status(404).json({ errors: err });
-      //   } else {
-      //     res.cookie(
-      //       config.authCookieKey,
-      //       { token: user.token },
-      //       {
-      //         httpOnly: true,
-      //         maxAge: config.jwtExpiresIn,
-      //       },
-      //     );
-      //     res.json({ user });
-      //   }
-      // });
-    } else {
+  auth(req)
+    .then((user: IUser) => {
       res.cookie(
         config.authCookieKey,
         { token: user.token },
@@ -35,8 +16,11 @@ route.post('/access_token', (req, res) => {
         },
       );
       res.json({ user });
-    }
-  });
+    })
+    .catch((errors: any) => {
+      res.clearCookie(config.authCookieKey);
+      res.status(401).json({ errors });
+    });
 });
 
 route.post('/register', (req, res) => {

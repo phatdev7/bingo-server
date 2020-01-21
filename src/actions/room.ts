@@ -127,6 +127,7 @@ export const addUserInRoom = async (current_code: string, user: IUser) => {
         roomTicket.num_of_row,
         roomTicket.num_of_win,
       );
+
       const new_code = JSON.stringify({ room_id, uid: generateUID() });
       await RoomTicket.findOneAndUpdate(
         { room_id },

@@ -2,22 +2,33 @@ import User, { IUser } from 'src/models/user';
 import config from '../../config';
 import uid from 'uniqid';
 
-export const auth = async (req: any, callback: Function) => {
-  const authCookie =
-    req.body.cookies && req.body.cookies[config.authCookieKey]
-      ? req.body.cookies[config.authCookieKey]
-      : req.cookies[config.authCookieKey];
+export const auth = async (req: any) => {
+  try {
+    const authCookie =
+      req.body.cookies && req.body.cookies[config.authCookieKey]
+        ? req.body.cookies[config.authCookieKey]
+        : req.cookies[config.authCookieKey];
 
-  if (authCookie && authCookie.token) {
-    User.findOne({ token: authCookie.token }, (err, successData: IUser) => {
-      if (err || !successData) {
-        callback(err);
-      } else {
-        callback(null, successData.toJSON());
-      }
-    });
-  } else {
-    callback(true);
+    if (authCookie && authCookie.token) {
+      return getUserByToken(authCookie.token);
+    } else {
+      throw 'Auth cookie not found';
+    }
+  } catch (err) {
+    return Promise.reject(err);
+  }
+};
+
+export const getUserByToken = async (token: string) => {
+  try {
+    const user = await User.findOne({ token });
+    if (user) {
+      return Promise.resolve(user.toJSON());
+    } else {
+      throw 'User not found';
+    }
+  } catch (err) {
+    return Promise.reject(err);
   }
 };
 

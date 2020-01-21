@@ -1,7 +1,6 @@
 import SocketIO, { Server } from 'socket.io';
 import http from 'http';
 import RegisterHandlers from './RegisterHandlers';
-// import cookieParser from 'socket.io-cookie';
 import Sender from './Sender';
 import { ISocket } from './socketHandlers/AbsHandler';
 import redis from 'redis';
@@ -23,8 +22,8 @@ class Socket {
       path,
       pingInterval: 5000,
       pingTimeout: 5000,
+      cookie: false,
     });
-    // this.io.use(cookieParser);
     Sender.setIO(this.io);
     this.io.on('connection', this.onConnection);
 

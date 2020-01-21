@@ -5,12 +5,8 @@ import { IGame } from 'src/models/game';
 import Commands from '../Commands';
 import CountDownHandler from './CountDownHandler';
 
-interface IParams2 extends IParams {
-  room_id: string;
-}
-
 class CreateGameHandler extends AbsHandler {
-  checkParams = async (params: IParams2) => {
+  checkParams = async (params: IParams) => {
     const { user, room_id } = params;
     if (!user._id) {
       return 'User_id is required';
@@ -23,7 +19,7 @@ class CreateGameHandler extends AbsHandler {
 
   doHandleMessage = async (
     socket: ISocket,
-    params: IParams2,
+    params: IParams,
     sendData: SendData,
   ) => {
     const { user, room_id } = params;

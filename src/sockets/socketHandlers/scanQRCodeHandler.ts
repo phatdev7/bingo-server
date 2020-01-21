@@ -13,6 +13,7 @@ interface IParams2 extends IParams {
 class ScanQRCodeHandler extends AbsHandler {
   checkParams = async (params: IParams2) => {
     const { current_code, user } = params;
+    console.log(params);
     if (!current_code) {
       return 'current_code is required';
     } else if (!user) {

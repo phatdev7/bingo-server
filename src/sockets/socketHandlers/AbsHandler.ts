@@ -1,7 +1,11 @@
 import { Socket } from 'socket.io';
+import cookieParser from 'cookie';
+import { getUserByToken } from 'src/actions/user';
+import config from '../../../config';
 import SendData from '../SendData';
 import Sender from '../Sender';
 import { IUser } from 'src/models/user';
+const { authCookieKey } = config;
 
 export interface ISocket extends Socket {
   room_id: string;
@@ -44,13 +48,20 @@ class AbsHandler {
     const sendData = this.makeASendData();
 
     try {
-      const err = await this.checkParams(params);
+      const cookie = cookieParser.parse(socket.handshake.headers.cookie);
+      const authCookie =
+        cookie[authCookieKey] &&
+        JSON.parse(cookie[authCookieKey].replace('j:', ''));
+      const user = await getUserByToken(authCookie.token);
+
+      const newParams = { ...params, user };
+      const err = await this.checkParams(newParams);
       if (err) {
         sendData.setError(err);
         this.sender.send(socket, sendData);
         return;
       }
-      await this.doHandleMessage(socket, params, sendData);
+      await this.doHandleMessage(socket, newParams, sendData);
     } catch (err) {
       sendData.setError(err);
       this.sender.send(socket, sendData);
